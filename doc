@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>阿福健康助手</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #f5f6f0;
+      --white: #ffffff;
+      --text: #2d3a2e;
+      --text-secondary: #6b7c6e;
+      --accent: #4a9b6e;
+      --accent-light: #e8f5ee;
+      --user-bubble: #4a9b6e;
+      --bot-bubble: #ffffff;
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      --border: #e2e8e4;
+      --warning: #e8a849;
+      --warning-light: #fef7ec;
+      --plan-bg: #f0faf4;
+      --barrier-bg: #fef7ec;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    #root {
+      max-width: 430px;
+      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      background: var(--white);
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.5px;
+    }
+    .header p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 16px 8px;
+      scroll-behavior: smooth;
+    }
+    .chat-area::-webkit-scrollbar { width: 0; }
+
+    /* Messages */
+    .msg-row { display: flex; margin-bottom: 12px; }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row.bot { justify-content: flex-start; }
+    .msg-bubble {
+      max-width: 78%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg-row.user .msg-bubble {
+      background: var(--user-bubble);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg-row.bot .msg-bubble {
+      background: var(--bot-bubble);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+      box-shadow: var(--card-shadow);
+    }
+
+    /* Cards shared */
+    .card {
+      margin: 8px 16px 12px;
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: var(--card-shadow);
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-label .icon { font-size: 14px; }
+
+    /* Profile card */
+    .card.profile {
+      background: var(--white);
+      border-left: 3px solid var(--accent);
+    }
+    .card.profile .card-label { color: var(--accent); }
+    .profile-section { margin-bottom: 8px; }
+    .profile-section:last-child { margin-bottom: 0; }
+    .profile-section-title {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .profile-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .profile-tag {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .profile-text {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    /* Action plan card */
+    .card.plan {
+      background: var(--plan-bg);
+      border-left: 3px solid var(--accent);
+    }
+    .card.plan .card-label { color: var(--accent); }
+    .plan-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .plan-type {
+      font-size: 11px;
+      color: var(--text-secondary);
+      background: var(--white);
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .plan-tasks { list-style: none; }
+    .plan-tasks li {
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .plan-tasks li:last-child { border-bottom: none; }
+    .task-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-top: 7px;
+      flex-shrink: 0;
+    }
+
+    /* Barrier card */
+    .card.barrier {
+      background: var(--barrier-bg);
+      border-left: 3px solid var(--warning);
+    }
+    .card.barrier .card-label { color: var(--warning); }
+    .barrier-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .barrier-constraints { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .barrier-tag {
+      background: #fff;
+      color: #c47a20;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #f0d9a8;
+    }
+
+    /* Input bar */
+    .input-bar {
+      background: var(--white);
+      padding: 10px 16px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .input-bar input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 10px 16px;
+      font-size: 14px;
+      outline: none;
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+    .input-bar input:focus { border-color: var(--accent); }
+    .input-bar input::placeholder { color: #aab5ac; }
+    .send-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.2s;
+    }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .send-btn svg { width: 18px; height: 18px; }
+
+    /* Loading dots */
+    .loading-dots { display: flex; gap: 4px; padding: 4px 0; }
+    .loading-dots span {
+      width: 6px; height: 6px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+
+    const { useState, useRef, useEffect } = React;
+
+    // ========== Mock Data ==========
+    const MOCK_RESPONSES = [
+      {
+        match: /血糖|空腹/,
+        data: {
+          bot_reply: "空腹血糖 6.2 mmol/L 不算严重，但已经值得开始注意了。",
+          profile_summary: "",
+          action_plan: "",
+          barrier_summary: ""
+        }
+      },
+      {
+        match: /久坐|外卖|晚睡|习惯|不运动/,
+        data: {
+          bot_reply: "我已经看到你现在的几个关键习惯了，后面我会更结合你的日常节奏来给建议。",
+          profile_summary: JSON.stringify({ risks: [], habits: ["久坐", "外卖多", "晚睡", "基本不运动"], goal: "", constraints: [] }),
+          action_plan: "",
+          barrier_summary: ""
+        }
+      },
+      {
+        match: /计划|控糖|开始|行动|建议/,
+        data: {
+          bot_reply: "我先给你一个低门槛起步版，不要求一下子做到完美，先从最容易的一步开始就行。",
+          profile_summary: JSON.stringify({ risks: [], habits: [], goal: "控糖改善", constraints: ["下班很晚", "不太想做复杂准备"] }),
+          action_plan: JSON.stringify({ plan_type: "starter_3d", title: "3天低门槛起步计划", tasks: ["晚餐先把主食稍微少一点。", "下班后慢走5到10分钟。", "饮料先换成白水或无糖茶。"] }),
+          barrier_summary: ""
+        }
+      },
+      {
+        match: /做不到|太难|调整|坚持不了|太累/,
+        data: {
+          bot_reply: "这次调整不是因为你做不到，而是原来的计划对你现在的状态来说有点太重了。我先把门槛降下来。",
+          profile_summary: "",
+          action_plan: JSON.stringify({ plan_type: "starter_3d", title: "调整后更容易做到的计划", tasks: ["晚饭前先喝几口白水。", "如果回家太累，晚餐只少一点主食。", "晚上想加餐时先选无糖酸奶或鸡蛋。"] }),
+          barrier_summary: JSON.stringify({ updated_constraints: ["下班后疲劳", "晚间执行力低"], barrier_summary: "连续3天未能执行的核心障碍是下班回家太累，导致晚间难以落实任何调整。" })
+        }
+      }
+    ];
+
+    const DEFAULT_RESPONSE = {
+      bot_reply: "我记下了，后面会结合你的情况给你更具体的建议。",
+      profile_summary: "",
+      action_plan: "",
+      barrier_summary: ""
+    };
+
+    // ========== API Layer ==========
+    async function sendMessage(text) {
+      // Mock mode: match input to mock data
+      await new Promise(r => setTimeout(r, 800 + Math.random() * 600));
+      for (const mock of MOCK_RESPONSES) {
+        if (mock.match.test(text)) return mock.data;
+      }
+      return DEFAULT_RESPONSE;
+
+      // TODO: Real API
+      // const res = await fetch('/api/chat', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ message: text })
+      // });
+      // return res.json();
+    }
+
+    // ========== Utility ==========
+    function safeParse(str) {
+      if (!str) return null;
+      try { return JSON.parse(str); } catch { return str; }
+    }
+
+    // ========== Components ==========
+
+    function ChatMessage({ role, text }) {
+      return (
+        <div className={`msg-row ${role}`}>
+          <div className="msg-bubble">{text}</div>
+        </div>
+      );
+    }
+
+    function LoadingBubble() {
+      return (
+        <div className="msg-row bot">
+          <div className="msg-bubble">
+            <div className="loading-dots">
+              <span /><span /><span />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ProfileSummaryCard({ data }) {
+      const parsed = safeParse(data);
+      if (!parsed || typeof parsed !== 'object') return null;
+      const { risks, habits, goal, constraints } = parsed;
+      const hasContent = (risks && risks.length) || (habits && habits.length) || goal || (constraints && constraints.length);
+      if (!hasContent) return null;
+
+      return (
+        <div className="card profile">
+          <div className="card-label"><span className="icon">📋</span> 健康档案摘要</div>
+          {risks && risks.length > 0 && (
+            <div className="profile-section">
+              <div className="profile-section-title">风险提示</div>
+              <div className="profile-tags">{risks.map((r, i) => <span key={i} className="profile-tag">{r}</span>)}</div>
+            </div>
+          )}
+          {habits && habits.length > 0 && (
+            <div className="profile-section">
+              <div className="profile-section-title">当前习惯</div>
+              <div className="profile-tags">{habits.map((h, i) => <span key={i} className="profile-tag">{h}</span>)}</div>
+            </div>
+          )}
+          {goal && (
+            <div className="profile-section">
+              <div className="profile-section-title">目标</div>
+              <div className="profile-text">{goal}</div>
+            </div>
+          )}
+          {constraints && constraints.length > 0 && (
+            <div className="profile-section">
+              <div className="profile-section-title">限制条件</div>
+              <div className="profile-tags">{constraints.map((c, i) => <span key={i} className="profile-tag">{c}</span>)}</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ActionPlanCard({ data }) {
+      const parsed = safeParse(data);
+      if (!parsed || typeof parsed !== 'object') return null;
+      const { plan_type, title, tasks } = parsed;
+      if (!tasks || !tasks.length) return null;
+
+      return (
+        <div className="card plan">
+          <div className="card-label"><span className="icon">🎯</span> 行动计划</div>
+          {plan_type && <div className="plan-type">{plan_type}</div>}
+          {title && <div className="plan-title">{title}</div>}
+          <ul className="plan-tasks">
+            {tasks.map((t, i) => (
+              <li key={i}><span className="task-dot" /><span>{t}</span></li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    function BarrierSummaryCard({ data }) {
+      const parsed = safeParse(data);
+      if (!parsed) return null;
+
+      if (typeof parsed === 'string') {
+        return (
+          <div className="card barrier">
+            <div className="card-label"><span className="icon">⚠️</span> 障碍分析</div>
+            <div className="barrier-text">{parsed}</div>
+          </div>
+        );
+      }
+
+      const { updated_constraints, barrier_summary: summary } = parsed;
+      if (!summary && (!updated_constraints || !updated_constraints.length)) return null;
+
+      return (
+        <div className="card barrier">
+          <div className="card-label"><span className="icon">⚠️</span> 障碍分析</div>
+          {summary && <div className="barrier-text">{summary}</div>}
+          {updated_constraints && updated_constraints.length > 0 && (
+            <div>
+              <div className="profile-section-title" style={{ marginTop: 4 }}>更新的限制条件</div>
+              <div className="barrier-constraints">
+                {updated_constraints.map((c, i) => <span key={i} className="barrier-tag">{c}</span>)}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function InputBar({ onSend, loading }) {
+      const [text, setText] = useState('');
+      const inputRef = useRef(null);
+
+      const handleSend = () => {
+        const trimmed = text.trim();
+        if (!trimmed || loading) return;
+        onSend(trimmed);
+        setText('');
+      };
+
+      const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      };
+
+      return (
+        <div className="input-bar">
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="说说你的健康问题..."
+            disabled={loading}
+          />
+          <button className="send-btn" onClick={handleSend} disabled={loading || !text.trim()}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
+      );
+    }
+
+    // ========== Main Page ==========
+    function ChatPage() {
+      const [messages, setMessages] = useState([
+        { role: 'bot', text: '你好，我是阿福健康助手。\n你可以先和我说说最近最想改善的健康问题。' }
+      ]);
+      const [latestProfileSummary, setLatestProfileSummary] = useState('');
+      const [latestActionPlan, setLatestActionPlan] = useState('');
+      const [latestBarrierSummary, setLatestBarrierSummary] = useState('');
+      const [loading, setLoading] = useState(false);
+      const chatEndRef = useRef(null);
+
+      useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [messages, loading]);
+
+      const handleSend = async (text) => {
+        setMessages(prev => [...prev, { role: 'user', text }]);
+        setLoading(true);
+
+        try {
+          const res = await sendMessage(text);
+          setMessages(prev => [...prev, { role: 'bot', text: res.bot_reply }]);
+          if (res.profile_summary) setLatestProfileSummary(res.profile_summary);
+          if (res.action_plan) setLatestActionPlan(res.action_plan);
+          if (res.barrier_summary) setLatestBarrierSummary(res.barrier_summary);
+        } catch (err) {
+          setMessages(prev => [...prev, { role: 'bot', text: '抱歉，出了点问题，请稍后再试。' }]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <>
+          <div className="header">
+            <h1>阿福健康助手</h1>
+            <p>从健康咨询到行动管理</p>
+          </div>
+
+          <div className="chat-area">
+            {messages.map((msg, i) => (
+              <ChatMessage key={i} role={msg.role} text={msg.text} />
+            ))}
+            {loading && <LoadingBubble />}
+            <div ref={chatEndRef} />
+          </div>
+
+          {latestProfileSummary && <ProfileSummaryCard data={latestProfileSummary} />}
+          {latestActionPlan && <ActionPlanCard data={latestActionPlan} />}
+          {latestBarrierSummary && <BarrierSummaryCard data={latestBarrierSummary} />}
+
+          <InputBar onSend={handleSend} loading={loading} />
+        </>
+      );
+    }
+
+    // ========== Mount ==========
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ChatPage />);
+  </script>
+</body>
+</html>
